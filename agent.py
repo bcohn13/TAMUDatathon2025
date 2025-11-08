@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from threading import Lock
 from collections import deque
 import helper
-
+import torch
 from case_closed_game import Game, Direction, GameResult
 
 # Flask API server setup
@@ -99,34 +99,12 @@ def send_move():
     # -----------------your code here-------------------
     # Simple example: always go RIGHT (replace this with your logic)
     # To use a boost: move = "RIGHT:BOOST"
-    best_move = None
-    max_reachable = -1
-
-    for move_str in ["UP", "DOWN", "LEFT", "RIGHT"]:
-        # To simulate the next state, you might need to create a copy of the current game, move the agent, then call bfs_reachable.
-        # Here, assuming helper.bfs_reachable accepts the board and a position and returns number of reachable cells.
-        
-        # This example uses your helper to estimate score:
-        # (You may need to adapt path to helper.bfs_reachable based on actual signature)
-        try:
-            # hypothetically get new position after move
-            new_pos = helper.get_new_position(my_agent.position, Direction[move_str])
-            reachable_count = helper.bfs_reachable(GLOBAL_GAME.board, new_pos)
-        except Exception:
-            reachable_count = 0
-        
-        if reachable_count > max_reachable:
-            max_reachable = reachable_count
-            best_move = move_str
-        
-
-    # Choose which agent to test here
-    move = best_move
-
-    # Example: Use boost if available and turn is late in the game
-    turn_count = state.get("turn_count", 0)
-    if boosts_remaining > 0 and turn_count > 50:
-        move = f"{move}:BOOST"
+    model = helper.DQN()
+# 2. Assume you have a current board_state as 18x20 numpy array
+    board_state = torch.tensor(GLOBAL_GAME.agent1.board.grid, dtype=torch.float32)
+# 3. Get move
+    move = helper.select_action(model, board_state, epsilon=0.05)
+    print("Selected move:", move)
     
     # Example: Use boost if available and it's late in the game
     # turn_count = state.get("turn_count", 0)
