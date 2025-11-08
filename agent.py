@@ -3,6 +3,7 @@ import uuid
 from flask import Flask, request, jsonify
 from threading import Lock
 from collections import deque
+import helper
 
 from case_closed_game import Game, Direction, GameResult
 
@@ -98,7 +99,11 @@ def send_move():
     # -----------------your code here-------------------
     # Simple example: always go RIGHT (replace this with your logic)
     # To use a boost: move = "RIGHT:BOOST"
-    move = "DOWN"
+    bfs=helper.bfs_reachable(helper.case_closed_game.GameBoard,GLOBAL_GAME.agent1.second)
+    if bfs>3:
+        move = "DOWN"
+    else:
+        move="Right"
     
     # Example: Use boost if available and it's late in the game
     # turn_count = state.get("turn_count", 0)
