@@ -6,6 +6,7 @@ from collections import deque
 import helper
 import torch
 from case_closed_game import Game, Direction, GameResult
+import numpy as np
 
 # Flask API server setup
 app = Flask(__name__)
@@ -18,6 +19,21 @@ game_lock = Lock()
 PARTICIPANT = "ParticipantX"
 AGENT_NAME = "AgentX"
 
+
+
+game_state = {
+    "board": None,
+    "agent1_trail": [],
+    "agent2_trail": [],
+    "agent1_length": 0,
+    "agent2_length": 0,
+    "agent1_alive": True,
+    "agent2_alive": True,
+    "agent1_boosts": 3,
+    "agent2_boosts": 3,
+    "turn_count": 0,
+    "player_number": 1,
+}
 
 @app.route("/", methods=["GET"])
 def info():
@@ -90,7 +106,12 @@ def send_move():
     and :BOOST is optional to use a speed boost (move twice)
     """
     player_number = request.args.get("player_number", default=1, type=int)
-
+    action_map = {0: "UP", 1: "DOWN", 2: "LEFT", 3: "RIGHT"}
+    device = torch.device("cpu")
+    policy_net = helper.DQN().to(device)
+# Load weights if you have a saved model
+# policy_net.load_state_dict(torch.load("dqn_model.pth", map_location=device))
+    policy_net.eval()
     with game_lock:
         state = dict(LAST_POSTED_STATE)   
         my_agent = GLOBAL_GAME.agent1 if player_number == 1 else GLOBAL_GAME.agent2
@@ -99,19 +120,15 @@ def send_move():
     # -----------------your code here-------------------
     # Simple example: always go RIGHT (replace this with your logic)
     # To use a boost: move = "RIGHT:BOOST"
-    model = helper.DQN()
-# 2. Assume you have a current board_state as 18x20 numpy array
-    board_state = torch.tensor(GLOBAL_GAME.agent1.board.grid, dtype=torch.float32)
-# 3. Get move
-    move = helper.select_action(model, board_state, epsilon=0.05)
-    print("Selected move:", move)
-    
+    grid_data = state['board']  # adjust key to your actual state structure
+    state_array = np.array(grid_data, dtype=np.float32)  
+    move = helper.select_action(state_array, policy_net, epsilon=0.0, device=device)
     # Example: Use boost if available and it's late in the game
     # turn_count = state.get("turn_count", 0)
     # if boosts_remaining > 0 and turn_count > 50:
     #     move = "RIGHT:BOOST"
     # -----------------end code here--------------------
-
+    
     return jsonify({"move": move}), 200
 
 
@@ -125,6 +142,7 @@ def end_game():
     if data:
         _update_local_game_from_post(data)
     return jsonify({"status": "acknowledged"}), 200
+
 
 
 if __name__ == "__main__":
