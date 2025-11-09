@@ -116,13 +116,23 @@ def send_move():
         state = dict(LAST_POSTED_STATE)   
         my_agent = GLOBAL_GAME.agent1 if player_number == 1 else GLOBAL_GAME.agent2
         boosts_remaining = my_agent.boosts_remaining
+    grid_data = state['board']  # adjust key to your actual state structure
+    state_array = np.array(grid_data, dtype=np.float32)  
+    move = helper.select_action(state_array, policy_net, epsilon=0.0, device=device)
+
+    if (move == Direction.DOWN):
+        move = "DOWN"
+    elif (move == Direction.UP):
+        move = "UP"
+    if (move == Direction.RIGHT):
+        move = "RIGHT"
+    elif (move == Direction.LEFT):
+        move = "LEFT"
    
     # -----------------your code here-------------------
     # Simple example: always go RIGHT (replace this with your logic)
     # To use a boost: move = "RIGHT:BOOST"
-    grid_data = state['board']  # adjust key to your actual state structure
-    state_array = np.array(grid_data, dtype=np.float32)  
-    move = helper.select_action(state_array, policy_net, epsilon=0.0, device=device)
+    
     # Example: Use boost if available and it's late in the game
     # turn_count = state.get("turn_count", 0)
     # if boosts_remaining > 0 and turn_count > 50:

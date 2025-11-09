@@ -4,11 +4,14 @@ import torch.optim as optim
 import random
 import numpy as np
 from collections import deque
+from case_closed_game import Direction
+import matplotlib.pyplot as plt
+
 action_map = {
-    0: "UP",
-    1: "DOWN",
-    2: "LEFT",
-    3: "RIGHT"
+            0: Direction.UP,
+            1: Direction.DOWN,
+            2: Direction.LEFT,
+            3: Direction.RIGHT
 }
 # Neural network for DQN - input size = 18x20 flattened
 class DQN(nn.Module):
@@ -42,10 +45,14 @@ class ReplayBuffer:
         return len(self.buffer)
 
 # Helper function to select action (epsilon-greedy)
-def select_action(state, policy_net, epsilon, device):
+def select_action(state, policy_net, epsilon, device): #head location 
+    '''headPos is a tuple(x, y)'''
     if random.random() < epsilon:
+        #print("Hello, we are picking a explorative")
         # Random action chosen from available actions
-        action_index = random.choice(list(action_map.keys()))
+        action_index = random.choice(list(action_map.keys())) #it will never randomly choose to move into a filled wall 
+        #while (action_map[action_index] == "UP" and state[headPos[0]][headPos[1]+1] == 1)
+            
     else:
         with torch.no_grad():
             state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device)
@@ -57,6 +64,8 @@ def select_action(state, policy_net, epsilon, device):
 
 # Training loop (pseudo code - fill with your environment interaction code)
 def train_dqn(env, num_episodes=1000):
+    episodeArray = []
+    roundsSurvivedArray = []
     device = torch.device("cpu")
     policy_net = DQN().to(device)
     target_net = DQN().to(device)
@@ -75,15 +84,18 @@ def train_dqn(env, num_episodes=1000):
     for episode in range(num_episodes):
         state = env.reset()  # should return 18x20 grid state (e.g., numpy array)
         done = False
+        numberRoundsSurvived = 0
 
         while not done:
             action = select_action(state, policy_net, epsilon, device)
             next_state, reward, done = env.step(action)  # implement your env's step
+            numberRoundsSurvived += 1
 
-            replay_buffer.push(state, action, reward, next_state, done)
+            replay_buffer.push(state, next(k for k, v in action_map.items() if v == action), reward, next_state, done)
             state = next_state
 
-            if len(replay_buffer) > batch_size:
+            '''
+            if len(replay_buffer) > batch_size: #this part is bugged, actions is not ints/nums
                 states, actions, rewards, next_states, dones = replay_buffer.sample(batch_size)
 
                 states = torch.tensor(states).to(device)
@@ -99,15 +111,18 @@ def train_dqn(env, num_episodes=1000):
                 loss = nn.MSELoss()(q_values, expected_q_values.detach())
                 optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
-
+                optimizer.step()         
+            '''
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
         if episode % target_update_freq == 0:
             target_net.load_state_dict(policy_net.state_dict())
 
-        print(f"Episode {episode}, Epsilon {epsilon:.3f}")
-
+        #print(f"Episode {episode}, Epsilon {epsilon:.3f}, Survived Rounds {numberRoundsSurvived}")
+        episodeArray.append(episode)
+        roundsSurvivedArray.append(numberRoundsSurvived)
+    plt.plot(episodeArray, roundsSurvivedArray)
+    plt.show()
 # Note: You need to implement your custom env class with reset() and step(action) methods.
 # The state returned should be an 18x20 numpy array representing the grid.
 # The step(action) should return next_state, reward, done flag.

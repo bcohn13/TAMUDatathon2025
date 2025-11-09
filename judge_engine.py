@@ -4,6 +4,7 @@ import time
 import os
 from case_closed_game import Game, Direction, GameResult
 import random
+import logging
 
 class RandomPlayer:
     def __init__(self, player_id=1):
@@ -151,6 +152,7 @@ class Judge:
             if isinstance(result, GameResult):
                 if result == GameResult.AGENT1_WIN:
                     print(f"Winner: Agent 1 ({self.p1_agent.agent_name})")
+                    
                 elif result == GameResult.AGENT2_WIN:
                     print(f"Winner: Agent 2 ({self.p2_agent.agent_name})")
                 else:

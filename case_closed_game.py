@@ -117,8 +117,8 @@ class Agent:
         for move_num in range(num_moves):
             cur_dx, cur_dy = self.direction.value
             req_dx, req_dy = direction.value
-            if (req_dx, req_dy) == (-cur_dx, -cur_dy):
-                print('invalid move')
+            if (req_dx, req_dy) == (-cur_dx, -cur_dy): #remove this commented out part
+                #print('invalid move')
                 continue  # Skip this move if invalid direction
             
             head = self.trail[-1]
