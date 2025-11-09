@@ -4,7 +4,12 @@ import torch.optim as optim
 import random
 import numpy as np
 from collections import deque
-
+action_map = {
+    0: "UP",
+    1: "DOWN",
+    2: "LEFT",
+    3: "RIGHT"
+}
 # Neural network for DQN - input size = 18x20 flattened
 class DQN(nn.Module):
     def __init__(self, height=18, width=20, n_actions=4):
@@ -39,16 +44,20 @@ class ReplayBuffer:
 # Helper function to select action (epsilon-greedy)
 def select_action(state, policy_net, epsilon, device):
     if random.random() < epsilon:
-        return random.randint(0, 3)  # random action (UP, DOWN, LEFT, RIGHT)
+        # Random action chosen from available actions
+        action_index = random.choice(list(action_map.keys()))
     else:
         with torch.no_grad():
-            state = torch.tensor(state).unsqueeze(0).to(device)  # add batch dim
-            q_values = policy_net(state)
-            return q_values.argmax(1).item()
+            state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device)
+            q_values = policy_net(state_tensor)
+            action_index = q_values.argmax(1).item()
+
+    # Map the integer action back to environment expected string
+    return action_map[action_index]
 
 # Training loop (pseudo code - fill with your environment interaction code)
 def train_dqn(env, num_episodes=1000):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     policy_net = DQN().to(device)
     target_net = DQN().to(device)
     target_net.load_state_dict(policy_net.state_dict())
