@@ -154,19 +154,19 @@ class Judge:
                 if result == GameResult.AGENT1_WIN:
                     print(f"Winner: Agent 1 ({self.p1_agent.agent_name})")
                     rewardDict = {"reward" : 1 + end_data["agent1_length"] * 0.1}
-                    with open("rewards.json", "w") as f:
+                    with open("data.json", "w") as f:
                         json.dump(rewardDict, f)
             
 
                 elif result == GameResult.AGENT2_WIN:
                     print(f"Winner: Agent 2 ({self.p2_agent.agent_name})")
                     rewardDict = {"reward" : -1 + end_data["agent1_length"] * 0.1}
-                    with open("rewards.json", "w") as f:
+                    with open("data.json", "w") as f:
                         json.dump(rewardDict, f)
                 else:
                     print("Game ended in a draw")
                     rewardDict = {"reward" : end_data["agent1_length"] * 0.1}
-                    with open("rewards.json", "w") as f:
+                    with open("data.json", "w") as f:
                         json.dump(rewardDict, f)
             else:
                 print(f"Game ended: {result}")

@@ -2,6 +2,7 @@ import random
 from collections import deque
 from enum import Enum
 from typing import Optional
+import json
 
 EMPTY = 0
 AGENT = 1
@@ -102,6 +103,9 @@ class Agent:
             True if the agent survives the move, False if it dies
         """
         if not self.alive:
+            rewardDict = {"reward" : -1, "done" : True}
+            with open("data.json", "w") as f:
+                json.dump(rewardDict, f)
             return False
 
         if use_boost and self.boosts_remaining <= 0:
@@ -157,7 +161,9 @@ class Agent:
             self.trail.append(new_head)
             self.length += 1
             self.board.set_cell_state(new_head, AGENT)
-        
+        rewardDict = {"reward" : 0.1, "done" : False}
+        with open("data.json", "w") as f:
+            json.dump(rewardDict, f)
         return True
 
     def get_trail_positions(self) -> list[tuple[int, int]]:
