@@ -127,7 +127,10 @@ def send_move():
     state_array = np.array(grid_data, dtype=np.float32)  
 
     if (not isTraining):
-        move = helper.select_action(state_array, policy_net, epsilon=0.0, device=device)
+        trained_policy = helper.DQN().to(device)
+        trained_policy.load_state_dict(torch.load("policy_net.pth"))
+        trained_policy.eval()
+        move = helper.select_action(state_array, trained_policy, epsilon=0.0, device=device)
     elif (isTraining):
         #We will run through the step > reward > update buffer loop
         move = helper.select_action(state_array, policy_net, train_model.epsilon, device)

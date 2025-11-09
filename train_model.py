@@ -50,8 +50,8 @@ def runEpisode():
     '''Runs the game and returns reward data '''
 #Run the game
     python_exe = sys.executable
-    subprocess.Popen([python_exe, "agent.py"])
-    subprocess.Popen([python_exe,"sample_agent.py"])
+    sub1 = subprocess.Popen([python_exe, "agent.py"])
+    sub2 =subprocess.Popen([python_exe,"sample_agent.py"])
     sleep(3)
     subprocess.run([python_exe,"judge_engine.py"])
 
@@ -59,18 +59,22 @@ def runEpisode():
     with open("data.json", "r") as f:
         reward = json.load(f)
 
+    sub1.terminate()
+    sub2.terminate()
+
     return reward["reward"]
 
 def train_dqn(num_episodes=1000):
     for i in range(num_episodes):
         runEpisode()
-    #plt.plot(episodeArray, roundsSurvivedArray)
-    #plt.show()
+   
 
 episodeArray = []
 roundsSurvivedArray = []
 device = torch.device("cpu")
 policy_net = DQN().to(device)
+policy_net.load_state_dict(torch.load("policy_net.pth"))
+policy_net.eval()
 target_net = DQN().to(device)
 optimizer = optim.Adam(policy_net.parameters())
 replay_buffer = ReplayBuffer()
@@ -91,7 +95,7 @@ def updateModel(move, state, next_state, episode_num):
     numberRoundsSurvived += 1
     replay_buffer.push(state, next(k for k, v in action_map.items() if v == move), data["reward"], next_state, data["dobe"]) #action is supposed to be directions i think fuuuck why didnt we jut use index
 
-    if len(replay_buffer) > batch_size: #this part is bugged, actions is not ints/nums
+    if len(replay_buffer) > 1: #this part is bugged, actions is not ints/nums
         states, actions, rewards, next_states, dones = replay_buffer.sample(batch_size)
 
         states = torch.tensor(states).to(device)
@@ -116,5 +120,14 @@ def updateModel(move, state, next_state, episode_num):
 
         #print(f"Episode {episode}, Epsilon {epsilon:.3f}, Survived Rounds {numberRoundsSurvived}")
         
-train_dqn(1)
-torch.save(policy_net.state_dict(), "policy_net.pth")
+#train_dqn(1)
+#torch.save(policy_net.state_dict(), "policy_net.pth")
+#train_dqn(2)
+
+rewardList = []
+for i in range(200):
+        rewardList.append(runEpisode())
+
+arr = np.arange(1, len(rewardList)+1)
+plt.plot(arr, rewardList)
+plt.show()
