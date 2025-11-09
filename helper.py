@@ -4,12 +4,9 @@ import torch.optim as optim
 import random
 import numpy as np
 from collections import deque
-action_map = {
-    0: "UP",
-    1: "DOWN",
-    2: "LEFT",
-    3: "RIGHT"
-}
+from case_closed_game import Game, Direction, GameResult
+
+action_map = {0: Direction.UP, 1: Direction.DOWN, 2: Direction.LEFT, 3: Direction.RIGHT}
 # Neural network for DQN - input size = 18x20 flattened
 class DQN(nn.Module):
     def __init__(self, height=18, width=20, n_actions=4):
@@ -42,7 +39,7 @@ class ReplayBuffer:
         return len(self.buffer)
 
 # Helper function to select action (epsilon-greedy)
-def select_action(state, policy_net, epsilon, device):
+def select_action(state, policy_net, epsilon, device,action_map):
     if random.random() < epsilon:
         # Random action chosen from available actions
         action_index = random.choice(list(action_map.keys()))
@@ -77,7 +74,7 @@ def train_dqn(env, num_episodes=1000):
         done = False
 
         while not done:
-            action = select_action(state, policy_net, epsilon, device)
+            action = select_action(state, policy_net, epsilon, device,action_map)
             next_state, reward, done = env.step(action)  # implement your env's step
 
             replay_buffer.push(state, action, reward, next_state, done)
@@ -107,8 +104,58 @@ def train_dqn(env, num_episodes=1000):
             target_net.load_state_dict(policy_net.state_dict())
 
         print(f"Episode {episode}, Epsilon {epsilon:.3f}")
+        return policy_net, target_net
+    
+class CaseClosedEnv:
+    def __init__(self):
+        self.game = Game()
+    
+    def reset(self):
+        """Reset the game and return initial state as 18x20 numpy array"""
+        self.game.reset()
+        return np.array(self.game.board.grid, dtype=np.float32)
+    
+    def step(self, action: Direction):
+        """
+        Take an action for agent1. 
+        For training, agent2 can be a simple random agent.
+        
+        Returns:
+            next_state: 18x20 numpy array
+            reward: float
+            done: bool
+        """
+        # Map numeric action to Direction
+        action_map = {
+            0: Direction.UP,
+            1: Direction.DOWN,
+            2: Direction.LEFT,
+            3: Direction.RIGHT
+        }
 
-# Note: You need to implement your custom env class with reset() and step(action) methods.
-# The state returned should be an 18x20 numpy array representing the grid.
-# The step(action) should return next_state, reward, done flag.
-
+         
+        agent1_dir = action
+        
+        # Use random move for agent2
+        possible_moves = [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]
+        agent2_dir = np.random.choice(possible_moves)
+        
+        # Step the game
+        result = self.game.step(agent1_dir, agent2_dir)
+        
+        # Reward shaping
+        if result == GameResult.AGENT1_WIN:
+            reward = 1.0
+            done = True
+        elif result == GameResult.AGENT2_WIN:
+            reward = -1.0
+            done = True
+        elif result == GameResult.DRAW:
+            reward = 0.0
+            done = True
+        else:
+            reward = 0.1  # small reward for surviving
+            done = False
+        
+        next_state = np.array(self.game.board.grid, dtype=np.float32)
+        return next_state, reward, done
